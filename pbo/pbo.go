@@ -32,6 +32,9 @@ type FileEntry struct {
 func (e *FileEntry) Data() ([]byte, error) {
 	var err error
 	if e.buf == nil {
+		if !e.parent.CacheData {
+			return e.parent.getData(e.start, e.DataSize, e.Packing == PackingMethodPacked)
+		}
 		e.buf, err = e.parent.getData(e.start, e.DataSize, e.Packing == PackingMethodPacked)
 	}
 	return e.buf, err
@@ -41,6 +44,8 @@ type File struct {
 	Path    string
 	Files   []*FileEntry
 	Headers map[string]string
+
+	CacheData bool
 
 	file      *os.File
 	dataStart int64
@@ -57,11 +62,13 @@ func (f *File) Save() error {
 	}
 	defer file.Close()
 
+	// TODO
+
 	return nil
 }
 
 func (f *File) getData(offset int64, length uint32, packed bool) ([]byte, error) {
-	if _, err := f.file.Seek(f.dataStart+offset, io.SeekCurrent); err != nil {
+	if _, err := f.file.Seek(f.dataStart+offset, io.SeekStart); err != nil {
 		return nil, err
 	}
 	buf := make([]byte, length)
@@ -76,6 +83,9 @@ func (f *File) Close() {
 }
 
 func (f *File) Dispose() {
+	if f.file != nil {
+		f.Close()
+	}
 	f.Files = nil
 	f.Headers = nil
 }
@@ -98,31 +108,26 @@ func Load(path string) (*File, error) {
 	}
 
 	parent := &File{
-		Path: path,
-		file: file,
-	}
-
-	headers, err := loadHeaders(file)
-	if err != nil {
-		return nil, err
-	}
-	entries, err := loadEntries(file, parent)
-	if err != nil {
-		return nil, err
-	}
-
-	dataStart, err := file.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return nil, err
-	}
-
-	return &File{
 		Path:      path,
-		Files:     entries,
-		Headers:   headers,
 		file:      file,
-		dataStart: dataStart,
-	}, nil
+		CacheData: true,
+	}
+
+	parent.Headers, err = loadHeaders(file)
+	if err != nil {
+		return nil, err
+	}
+	parent.Files, err = loadEntries(file, parent)
+	if err != nil {
+		return nil, err
+	}
+
+	parent.dataStart, err = file.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return nil, err
+	}
+
+	return parent, nil
 }
 
 func validateEntry(reader io.ReadSeeker) error {
