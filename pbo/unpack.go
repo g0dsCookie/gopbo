@@ -32,7 +32,7 @@ func (f *File) Unpack(destination string, verbose bool) error {
 
 	for _, entry := range f.Files {
 		var path string
-		if runtime.GOOS == "linux" {
+		if runtime.GOOS != "windows" { // replace \ by / if we are not running on windows
 			path = filepath.Join(destination, strings.Replace(entry.Filename, "\\", "/", -1))
 		} else {
 			path = filepath.Join(destination, entry.Filename)
