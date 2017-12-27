@@ -16,7 +16,10 @@ func (*ValidateCmd) Name() string { return "validate" }
 
 func (*ValidateCmd) Synopsis() string { return "Validates a PBO" }
 
-func (*ValidateCmd) Usage() string { return "validate <pbo>\n" }
+func (*ValidateCmd) Usage() string {
+	return `validate <pbo>
+`
+}
 
 func (*ValidateCmd) SetFlags(_ *flag.FlagSet) {}
 

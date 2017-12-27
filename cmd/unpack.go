@@ -20,7 +20,10 @@ func (*UnpackCmd) Name() string { return "unpack" }
 
 func (*UnpackCmd) Synopsis() string { return "Unpacks a PBO" }
 
-func (*UnpackCmd) Usage() string { return "unpack [-verbose] [-destination <dir>] <pbo>\n" }
+func (*UnpackCmd) Usage() string {
+	return `unpack [-verbose] [-destination <dir>] <pbo>
+`
+}
 
 func (u *UnpackCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&u.verbose, "verbose", false, "be verbose")
