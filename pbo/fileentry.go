@@ -29,3 +29,29 @@ func (e *FileEntry) IsProductEntry() bool { return e.Packing == PackingMethodPro
 
 // Data returns the current files data.
 func (e *FileEntry) Data() ([]byte, error) { return e.parent.file.readData(e) }
+
+func NewProductEntry() *FileEntry {
+	return &FileEntry{
+		Filename:     "",
+		Packing:      PackingMethodProductEntry,
+		OriginalSize: 0,
+		Reserved:     0,
+		Timestamp:    time.Unix(0, 0),
+		DataSize:     0,
+		parent:       nil,
+		start:        0,
+	}
+}
+
+func NewEmptyEntry() *FileEntry {
+	return &FileEntry{
+		Filename:     "",
+		Packing:      PackingMethodUncompressed,
+		OriginalSize: 0,
+		Reserved:     0,
+		Timestamp:    time.Unix(0, 0),
+		DataSize:     0,
+		parent:       nil,
+		start:        0,
+	}
+}

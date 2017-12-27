@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"hash"
+	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -18,8 +20,6 @@ type pboStream struct {
 	dataStart int64
 	cache     map[string][]byte
 
-	hasher hash.Hash
-
 	*os.File
 }
 
@@ -28,7 +28,7 @@ func openPBO(path string) (*pboStream, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &pboStream{0, nil, nil, file}, nil
+	return &pboStream{0, nil, file}, nil
 }
 
 func createPBO(path string) (*pboStream, error) {
@@ -36,7 +36,7 @@ func createPBO(path string) (*pboStream, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &pboStream{0, nil, sha1.New(), file}, nil
+	return &pboStream{0, nil, file}, nil
 }
 
 func (p *pboStream) readString() (string, error) {
@@ -59,7 +59,6 @@ func (p *pboStream) writeString(s string) (err error) {
 	if _, err = p.Write(b); err != nil {
 		return
 	}
-	p.hasher.Write(b)
 	return
 }
 
@@ -69,11 +68,7 @@ func (p *pboStream) readUInt32() (val uint32, err error) {
 }
 
 func (p *pboStream) writeUInt32(val uint32) error {
-	if err := binary.Write(p, binary.LittleEndian, val); err != nil {
-		return err
-	}
-	binary.Write(p.hasher, binary.LittleEndian, val)
-	return nil
+	return binary.Write(p, binary.LittleEndian, val)
 }
 
 func (p *pboStream) readPackingMethod() (PackingMethod, error) {
@@ -82,6 +77,7 @@ func (p *pboStream) readPackingMethod() (PackingMethod, error) {
 		return PackingMethodUncompressed, err
 	}
 	pack := PackingMethod(v)
+	fmt.Printf("%x - %v\n", pack, pack)
 	switch pack {
 	case PackingMethodUncompressed, PackingMethodPacked, PackingMethodProductEntry:
 		return pack, nil
@@ -108,6 +104,10 @@ func (p *pboStream) readFileEntry(parent *File) (entry *FileEntry, err error) {
 	if entry.Filename, err = p.readString(); err != nil {
 		return
 	}
+	if runtime.GOOS != "windows" {
+		entry.Filename = strings.Replace(entry.Filename, "\\", "/", -1)
+	}
+
 	if entry.Packing, err = p.readPackingMethod(); err != nil {
 		return
 	}
@@ -125,7 +125,11 @@ func (p *pboStream) readFileEntry(parent *File) (entry *FileEntry, err error) {
 }
 
 func (p *pboStream) writeFileEntry(entry *FileEntry) (err error) {
-	if err = p.writeString(entry.Filename); err != nil {
+	filename := entry.Filename
+	if runtime.GOOS != "windows" {
+		filename = strings.Replace(filename, "/", "\\", -1)
+	}
+	if err = p.writeString(filename); err != nil {
 		return
 	}
 	if err = p.writePackingMethod(entry.Packing); err != nil {
@@ -215,7 +219,8 @@ func (p *pboStream) writeHeaders(headers map[string]string) error {
 			return err
 		}
 	}
-	return nil
+	_, err := p.Write([]byte{0x00})
+	return err
 }
 
 func (p *pboStream) readData(entry *FileEntry) ([]byte, error) {
@@ -245,14 +250,21 @@ func (p *pboStream) writeData(b []byte) (err error) {
 	if _, err = p.Write(b); err != nil {
 		return
 	}
-	p.hasher.Write(b)
 	return
 }
 
-func (p *pboStream) writeHash() (err error) {
-	b := append([]byte{0x00}, p.hasher.Sum(nil)...)
+func (p *pboStream) writeHash() error {
+	length, err := p.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return err
+	}
+	calculatedHash, err := p.calculateHash(length)
+	if err != nil {
+		return err
+	}
+	b := append([]byte{0x00}, calculatedHash...)
 	_, err = p.Write(b)
-	return
+	return err
 }
 
 func (p *pboStream) validateProductEntry() error {
@@ -272,7 +284,7 @@ func (p *pboStream) validateProductEntry() error {
 }
 
 func (p *pboStream) validateFile() (err error) {
-	var currentPos, length int64
+	var length int64
 	if length, err = p.Seek(-20, io.SeekEnd); err != nil {
 		return
 	}
@@ -286,20 +298,10 @@ func (p *pboStream) validateFile() (err error) {
 		return
 	}
 
-	buf := make([]byte, bufferLength)
-	hasher := sha1.New()
-	for currentPos < length {
-		if (currentPos + bufferLength) > length {
-			buf = make([]byte, length-currentPos)
-		}
-		if _, err = p.Read(buf); err != nil {
-			return
-		}
-		hasher.Write(buf)
-		currentPos += bufferLength
+	calculatedHash, err := p.calculateHash(length)
+	if err != nil {
+		return err
 	}
-
-	calculatedHash := hasher.Sum(nil)
 	if bytes.Compare(currentHash, calculatedHash) != 0 {
 		err = ErrFileCorrupted
 	}
@@ -308,4 +310,26 @@ func (p *pboStream) validateFile() (err error) {
 		return
 	}
 	return
+}
+
+func (p *pboStream) calculateHash(length int64) ([]byte, error) {
+	var currentPos int64
+	buf := make([]byte, bufferLength)
+	hasher := sha1.New()
+	for currentPos < length {
+		if (currentPos + bufferLength) > length {
+			buf = make([]byte, length-currentPos)
+		}
+		read, err := p.Read(buf)
+		if err == io.EOF {
+			fmt.Println(read, length-currentPos)
+			hasher.Write(buf[:read])
+			break
+		} else if err != nil {
+			return nil, err
+		}
+		hasher.Write(buf)
+		currentPos += bufferLength
+	}
+	return hasher.Sum(nil), nil
 }

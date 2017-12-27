@@ -21,7 +21,7 @@ func (*UnpackCmd) Name() string { return "unpack" }
 func (*UnpackCmd) Synopsis() string { return "Unpacks a PBO" }
 
 func (*UnpackCmd) Usage() string {
-	return `unpack [-verbose] [-destination <dir>] <pbo>
+	return `unpack [-verbose] [-delete] [-destination <dir>] <pbo>
 `
 }
 
@@ -34,7 +34,7 @@ func (u *UnpackCmd) SetFlags(f *flag.FlagSet) {
 func (u *UnpackCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	path := f.Arg(0)
 	if path == "" {
-		fmt.Println("Please provide the pbo to unpack.\n")
+		fmt.Printf("Please provide the pbo to unpack.\n\n")
 		return subcommands.ExitUsageError
 	}
 

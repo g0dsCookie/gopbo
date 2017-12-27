@@ -26,7 +26,7 @@ func (*ValidateCmd) SetFlags(_ *flag.FlagSet) {}
 func (*ValidateCmd) Execute(_ context.Context, flags *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	path := flags.Arg(0)
 	if path == "" {
-		fmt.Println("Please provide the pbo to validate.\n")
+		fmt.Printf("Please provide the pbo to validate.\n\n")
 		return subcommands.ExitUsageError
 	}
 

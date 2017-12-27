@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	humanize "github.com/dustin/go-humanize"
@@ -32,12 +31,7 @@ func (f *File) Unpack(destination string, verbose bool) error {
 	}
 
 	for _, entry := range f.Files {
-		var path string
-		if runtime.GOOS != "windows" { // replace \ by / if we are not running on windows
-			path = filepath.Join(destination, strings.Replace(entry.Filename, "\\", "/", -1))
-		} else {
-			path = filepath.Join(destination, entry.Filename)
-		}
+		path := filepath.Join(destination, entry.Filename)
 
 		if verbose {
 			fmt.Printf("Unpacking %s to %s with size %s\n", entry.Filename, path, humanize.Bytes(uint64(entry.DataSize)))
