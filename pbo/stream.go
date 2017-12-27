@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 	"time"
@@ -54,7 +53,6 @@ func (p *pboStream) readPackingMethod() (PackingMethod, error) {
 	if err != nil {
 		return PackingMethodUncompressed, err
 	}
-	fmt.Printf("%x\n", v)
 	pack := PackingMethod(v)
 	switch pack {
 	case PackingMethodUncompressed, PackingMethodPacked, PackingMethodProductEntry:

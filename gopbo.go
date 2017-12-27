@@ -1,14 +1,22 @@
 package main
 
 import (
-	"github.com/g0dsCookie/gopbo/pbo"
+	"context"
+	"flag"
+	"os"
+
+	"github.com/g0dsCookie/gopbo/cmd"
+	"github.com/google/subcommands"
 )
 
-const file = `/home/g0dscookie/Downloads/Arma 3 Server/@ExileServer/addons/exile_server.pbo`
-const dir = `exile_server`
-
 func main() {
-	if err := pbo.UnpackVerbose(file, dir); err != nil {
-		panic(err)
-	}
+	subcommands.Register(subcommands.HelpCommand(), "")
+	subcommands.Register(subcommands.FlagsCommand(), "")
+	subcommands.Register(subcommands.CommandsCommand(), "")
+	subcommands.Register(&cmd.UnpackCmd{}, "")
+	subcommands.Register(&cmd.ValidateCmd{}, "")
+
+	flag.Parse()
+	ctx := context.Background()
+	os.Exit(int(subcommands.Execute(ctx)))
 }

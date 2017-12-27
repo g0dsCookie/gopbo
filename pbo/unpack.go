@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-)
 
-type UnpackHook func(entry *FileEntry) error
+	humanize "github.com/dustin/go-humanize"
+)
 
 func createDir(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -20,7 +20,7 @@ func createDir(dir string) error {
 	return nil
 }
 
-func (f *File) Unpack(destination string, hook UnpackHook) error {
+func (f *File) Unpack(destination string, verbose bool) error {
 	if err := createDir(destination); err != nil {
 		return err
 	}
@@ -31,18 +31,17 @@ func (f *File) Unpack(destination string, hook UnpackHook) error {
 	}
 
 	for _, entry := range f.Files {
-		if hook != nil {
-			if err := hook(entry); err != nil {
-				return err
-			}
-		}
-
 		var path string
 		if runtime.GOOS == "linux" {
 			path = filepath.Join(destination, strings.Replace(entry.Filename, "\\", "/", -1))
 		} else {
 			path = filepath.Join(destination, entry.Filename)
 		}
+
+		if verbose {
+			fmt.Printf("Unpacking %s to %s with size %s\n", entry.Filename, path, humanize.Bytes(uint64(entry.DataSize)))
+		}
+
 		createDir(filepath.Dir(path))
 
 		data, err := entry.Data()
@@ -74,20 +73,11 @@ func (f *File) Unpack(destination string, hook UnpackHook) error {
 	return nil
 }
 
-func Unpack(file, destination string, hook UnpackHook) error {
+func Unpack(file, destination string, verbose bool) error {
 	p, err := Load(file)
 	if err != nil {
 		return err
 	}
 	defer p.Close()
-	return p.Unpack(destination, hook)
-}
-
-func UnpackVerbose(file, destination string) error {
-	return Unpack(file, destination, VerboseUnpack)
-}
-
-func VerboseUnpack(entry *FileEntry) error {
-	fmt.Println("Unpacking", entry.Filename)
-	return nil
+	return p.Unpack(destination, verbose)
 }
