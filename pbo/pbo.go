@@ -5,14 +5,16 @@ import (
 	"os"
 )
 
+// File contains methods to handle PBO files.
 type File struct {
-	Path    string
-	Files   []*FileEntry
-	Headers map[string]string
+	Path    string            // Path contains the path to the current PBO file.
+	Files   []*FileEntry      // Files contains all files within the PBO file.
+	Headers map[string]string // Headers contains all header fields of the PBO file.
 
 	file *pboStream
 }
 
+// Load loads the PBO file.
 func Load(path string) (file *File, err error) {
 	file = &File{
 		Path: path,
@@ -21,7 +23,12 @@ func Load(path string) (file *File, err error) {
 	return
 }
 
+// Load (re)loads the PBO file.
 func (f *File) Load() (err error) {
+	if f.file != nil {
+		f.Close()
+	}
+
 	if f.file, err = newPboStream(f.Path); err != nil {
 		return
 	}
@@ -40,6 +47,7 @@ func (f *File) Load() (err error) {
 	return
 }
 
+// Save saves the PBO file. This will overwrite the existing file.
 func (f *File) Save() error {
 	if f.file != nil {
 		f.Close()
@@ -56,8 +64,10 @@ func (f *File) Save() error {
 	return nil
 }
 
+// CacheEnabled returns true if file caching is enabled.
 func (f *File) CacheEnabled() bool { return f.file.cache != nil }
 
+// ToggleCache enables/disables the file caching mechanism according to enable.
 func (f *File) ToggleCache(enable bool) {
 	if enable {
 		if f.CacheEnabled() {
@@ -68,12 +78,15 @@ func (f *File) ToggleCache(enable bool) {
 	}
 }
 
+// ClearCache clears the file cache.
 func (f *File) ClearCache() {
 	if f.file.cache != nil {
 		f.file.cache = make(map[string][]byte)
 	}
 }
 
+// Close closes the file stream and clears the file cache.
+// You can't read any files after this anymore!
 func (f *File) Close() {
 	f.file.Close()
 	f.file = nil

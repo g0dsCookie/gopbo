@@ -20,6 +20,7 @@ func createDir(dir string) error {
 	return nil
 }
 
+// Unpack unpacks the PBO file.
 func (f *File) Unpack(destination string, verbose bool) error {
 	if err := createDir(destination); err != nil {
 		return err
@@ -73,6 +74,7 @@ func (f *File) Unpack(destination string, verbose bool) error {
 	return nil
 }
 
+// Unpack loads the PBO and unpacks it.
 func Unpack(file, destination string, verbose bool) error {
 	p, err := Load(file)
 	if err != nil {
