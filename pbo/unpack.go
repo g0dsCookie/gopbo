@@ -25,7 +25,10 @@ func (f *File) Unpack(destination string, hook UnpackHook) error {
 		return err
 	}
 
-	f.CacheData = false
+	cacheEnabled := f.CacheEnabled()
+	if cacheEnabled {
+		f.ToggleCache(false)
+	}
 
 	for _, entry := range f.Files {
 		if hook != nil {
@@ -64,18 +67,20 @@ func (f *File) Unpack(destination string, hook UnpackHook) error {
 		}
 	}
 
-	f.CacheData = true
+	if cacheEnabled {
+		f.ToggleCache(true)
+	}
 
 	return nil
 }
 
 func Unpack(file, destination string, hook UnpackHook) error {
-	pbo, err := Load(file)
+	p, err := Load(file)
 	if err != nil {
 		return err
 	}
-	defer pbo.Dispose()
-	return pbo.Unpack(destination, hook)
+	defer p.Close()
+	return p.Unpack(destination, hook)
 }
 
 func UnpackVerbose(file, destination string) error {
