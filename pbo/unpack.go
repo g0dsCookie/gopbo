@@ -59,6 +59,10 @@ func (f *File) Unpack(destination string, verbose bool) error {
 			return err
 		}
 		file.Close()
+
+		if err = os.Chtimes(path, entry.Timestamp, entry.Timestamp); err != nil {
+			return err
+		}
 	}
 
 	for key, value := range f.Headers {
