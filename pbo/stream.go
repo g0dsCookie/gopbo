@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"hash"
 	"io"
 	"os"
 	"time"
@@ -17,15 +18,25 @@ type pboStream struct {
 	dataStart int64
 	cache     map[string][]byte
 
+	hasher hash.Hash
+
 	*os.File
 }
 
-func newPboStream(path string) (*pboStream, error) {
+func openPBO(path string) (*pboStream, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	return &pboStream{0, nil, file}, nil
+	return &pboStream{0, nil, nil, file}, nil
+}
+
+func createPBO(path string) (*pboStream, error) {
+	file, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+	return &pboStream{0, nil, sha1.New(), file}, nil
 }
 
 func (p *pboStream) readString() (string, error) {
@@ -43,9 +54,26 @@ func (p *pboStream) readString() (string, error) {
 	return buf.String(), nil
 }
 
+func (p *pboStream) writeString(s string) (err error) {
+	b := append([]byte(s), 0x00)
+	if _, err = p.Write(b); err != nil {
+		return
+	}
+	p.hasher.Write(b)
+	return
+}
+
 func (p *pboStream) readUInt32() (val uint32, err error) {
 	err = binary.Read(p, binary.LittleEndian, &val)
 	return
+}
+
+func (p *pboStream) writeUInt32(val uint32) error {
+	if err := binary.Write(p, binary.LittleEndian, val); err != nil {
+		return err
+	}
+	binary.Write(p.hasher, binary.LittleEndian, val)
+	return nil
 }
 
 func (p *pboStream) readPackingMethod() (PackingMethod, error) {
@@ -62,9 +90,17 @@ func (p *pboStream) readPackingMethod() (PackingMethod, error) {
 	}
 }
 
+func (p *pboStream) writePackingMethod(p PackingMethod) error {
+	return p.writeUInt32(uint32(p))
+}
+
 func (p *pboStream) readTimestamp() (time.Time, error) {
 	v, err := p.readUInt32()
 	return time.Unix(int64(v), 0), err
+}
+
+func (p *pboStream) writeTimestamp(t time.Time) error {
+	return p.writeUInt32(t.Unix())
 }
 
 func (p *pboStream) readFileEntry(parent *File) (entry *FileEntry, err error) {
@@ -84,9 +120,27 @@ func (p *pboStream) readFileEntry(parent *File) (entry *FileEntry, err error) {
 	if entry.Timestamp, err = p.readTimestamp(); err != nil {
 		return
 	}
-	if entry.DataSize, err = p.readUInt32(); err != nil {
+	entry.DataSize, err = p.readUInt32()
+	return
+}
+
+func (p *pboStream) writeFileEntry(entry *FileEntry) (err error) {
+	if err = p.writeString(entry.Filename); err != nil {
 		return
 	}
+	if err = p.writePackingMethod(entry.Packing); err != nil {
+		return
+	}
+	if err = p.writeUInt32(entry.OriginalSize); err != nil {
+		return
+	}
+	if err = p.writeUInt32(entry.Reserved); err != nil {
+		return
+	}
+	if err = p.writeTimestamp(entry.Timestamp); err != nil {
+		return
+	}
+	err = p.writeUInt32(entry.DataSize)
 	return
 }
 
@@ -110,6 +164,15 @@ func (p *pboStream) readFileEntries(parent *File) (entries []*FileEntry, err err
 	return
 }
 
+func (p *pboStream) writeFileEntries(entries []*FileEntry) error {
+	for _, entry := range entries {
+		if err := p.writeFileEntry(entry); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p *pboStream) readHeader() (key, value string, err error) {
 	if key, err = p.readString(); err != nil {
 		return
@@ -117,6 +180,14 @@ func (p *pboStream) readHeader() (key, value string, err error) {
 	if value, err = p.readString(); err != nil {
 		return
 	}
+	return
+}
+
+func (p *pboStream) writeHeader(key, value string) (err error) {
+	if err = p.writeString(key); err != nil {
+		return
+	}
+	err = p.writeString(value)
 	return
 }
 
@@ -136,6 +207,15 @@ func (p *pboStream) readHeaders() (headers map[string]string, err error) {
 		}
 		headers[key] = value
 	}
+}
+
+func (p *pboStream) writeHeaders(headers map[string]string) error {
+	for key, value := range headers {
+		if err := p.writeHeader(key, value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *pboStream) readData(entry *FileEntry) ([]byte, error) {
@@ -159,6 +239,20 @@ func (p *pboStream) readData(entry *FileEntry) ([]byte, error) {
 		p.cache[entry.Filename] = buf
 	}
 	return buf, nil
+}
+
+func (p *pboStream) writeData(b []byte) (err error) {
+	if _, err = p.Write(b); err != nil {
+		return
+	}
+	p.hasher.Write(b)
+	return
+}
+
+func (p *pboStream) writeHash() (err error) {
+	b := append([]byte{0x00}, p.hasher.Sum(nil)...)
+	_, err = p.Write(b)
+	return
 }
 
 func (p *pboStream) validateProductEntry() error {

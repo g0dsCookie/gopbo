@@ -2,7 +2,6 @@ package pbo
 
 import (
 	"io"
-	"os"
 )
 
 // File contains methods to handle PBO files.
@@ -29,7 +28,7 @@ func (f *File) Load() (err error) {
 		f.Close()
 	}
 
-	if f.file, err = newPboStream(f.Path); err != nil {
+	if f.file, err = openPBO(f.Path); err != nil {
 		return
 	}
 
@@ -45,23 +44,6 @@ func (f *File) Load() (err error) {
 	}
 	f.file.dataStart, err = f.file.Seek(0, io.SeekCurrent)
 	return
-}
-
-// Save saves the PBO file. This will overwrite the existing file.
-func (f *File) Save() error {
-	if f.file != nil {
-		f.Close()
-	}
-
-	file, err := os.Create(f.Path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// TODO
-
-	return nil
 }
 
 // CacheEnabled returns true if file caching is enabled.
