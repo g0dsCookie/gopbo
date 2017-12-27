@@ -16,6 +16,7 @@ func main() {
 	subcommands.Register(&cmd.UnpackCmd{}, "")
 	subcommands.Register(&cmd.ValidateCmd{}, "")
 	subcommands.Register(&cmd.PackCmd{}, "")
+	subcommands.Register(&cmd.VersionCmd{}, "")
 
 	flag.Parse()
 	ctx := context.Background()
