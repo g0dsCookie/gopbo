@@ -90,8 +90,8 @@ func (p *pboStream) readPackingMethod() (PackingMethod, error) {
 	}
 }
 
-func (p *pboStream) writePackingMethod(p PackingMethod) error {
-	return p.writeUInt32(uint32(p))
+func (p *pboStream) writePackingMethod(pack PackingMethod) error {
+	return p.writeUInt32(uint32(pack))
 }
 
 func (p *pboStream) readTimestamp() (time.Time, error) {
@@ -100,7 +100,7 @@ func (p *pboStream) readTimestamp() (time.Time, error) {
 }
 
 func (p *pboStream) writeTimestamp(t time.Time) error {
-	return p.writeUInt32(t.Unix())
+	return p.writeUInt32(uint32(t.Unix()))
 }
 
 func (p *pboStream) readFileEntry(parent *File) (entry *FileEntry, err error) {
