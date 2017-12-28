@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 	"runtime"
@@ -77,7 +76,6 @@ func (p *pboStream) readPackingMethod() (PackingMethod, error) {
 		return PackingMethodUncompressed, err
 	}
 	pack := PackingMethod(v)
-	fmt.Printf("%x - %v\n", pack, pack)
 	switch pack {
 	case PackingMethodUncompressed, PackingMethodPacked, PackingMethodProductEntry:
 		return pack, nil
@@ -322,7 +320,6 @@ func (p *pboStream) calculateHash(length int64) ([]byte, error) {
 		}
 		read, err := p.Read(buf)
 		if err == io.EOF {
-			fmt.Println(read, length-currentPos)
 			hasher.Write(buf[:read])
 			break
 		} else if err != nil {

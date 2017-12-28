@@ -59,9 +59,6 @@ func Pack(dir, destination string, verbose bool) error {
 		return err
 	}
 
-	fmt.Println(files)
-	fmt.Println(headers)
-
 	if err = stream.writeFileEntry(NewProductEntry()); err != nil {
 		return err
 	}
