@@ -44,6 +44,7 @@ func listFiles(dir string) ([]*FileEntry, map[string]string, error) {
 	})
 }
 
+// Pack packs dir into destination. The destination will be overwritten if it exists.
 func Pack(dir, destination string, verbose bool) error {
 	stream, err := createPBO(destination)
 	if err != nil {
@@ -88,9 +89,5 @@ func Pack(dir, destination string, verbose bool) error {
 		file.Close()
 	}
 
-	if err = stream.writeHash(); err != nil {
-		return err
-	}
-
-	return nil
+	return stream.writeHash()
 }
