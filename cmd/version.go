@@ -9,7 +9,7 @@ import (
 	"github.com/google/subcommands"
 )
 
-const version = "1.0.0"
+const version = "1.1.0"
 
 type VersionCmd struct {
 }
