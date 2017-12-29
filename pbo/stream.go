@@ -175,13 +175,8 @@ func (p *pboStream) writeFileEntries(entries []*FileEntry) error {
 	return nil
 }
 
-func (p *pboStream) readHeader() (key, value string, err error) {
-	if key, err = p.readString(); err != nil {
-		return
-	}
-	if value, err = p.readString(); err != nil {
-		return
-	}
+func (p *pboStream) readHeader() (s string, err error) {
+	s, err = p.readString()
 	return
 }
 
@@ -194,21 +189,24 @@ func (p *pboStream) writeHeader(key, value string) (err error) {
 }
 
 func (p *pboStream) readHeaders() (headers map[string]string, err error) {
-	var key, value string
-	b := make([]byte, 1)
-	headers = make(map[string]string)
+	var header string
+	headerBuf := make([]string, 0, 1)
 	for {
-		if _, err = p.Read(b); err != nil || b[0] == 0x00 {
+		if header, err = p.readHeader(); err != nil {
 			return
 		}
-		if _, err = p.Seek(-1, io.SeekCurrent); err != nil {
-			return
+		if header == "" {
+			break
 		}
-		if key, value, err = p.readHeader(); err != nil {
-			return
-		}
-		headers[key] = value
+		headerBuf = append(headerBuf, header)
 	}
+	headers = make(map[string]string)
+	i := 0
+	for i < len(headerBuf) { // ignore last entry
+		headers[headerBuf[i]] = headerBuf[i+1]
+		i += 2
+	}
+	return
 }
 
 func (p *pboStream) writeHeaders(headers map[string]string) error {
