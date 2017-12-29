@@ -10,27 +10,33 @@ import (
 	"github.com/google/subcommands"
 )
 
+// PackCmd will pack any directory into a pbo file.
 type PackCmd struct {
 	verbose     bool
 	deleteAfter bool
 	destination string
 }
 
+// Name returns the name of this command.
 func (*PackCmd) Name() string { return "pack" }
 
+// Synopsis returns the synopsis of this command.
 func (*PackCmd) Synopsis() string { return "Packs a directory into a PBO" }
 
+// Usage returns the usage of this command.
 func (*PackCmd) Usage() string {
 	return `pack [-verbose] [-delete] [-destination <pbo>] <directory>
 `
 }
 
+// SetFlags registers all flags for this command.
 func (u *PackCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&u.verbose, "verbose", false, "be verbose")
 	f.BoolVar(&u.deleteAfter, "delete", false, "delete directory after successful packing")
 	f.StringVar(&u.destination, "destination", "", "set destination where to save the PBO. Defaults to <directory>.pbo")
 }
 
+// Execute parses and executes the input.
 func (u *PackCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	path := f.Arg(0)
 	if path == "" {

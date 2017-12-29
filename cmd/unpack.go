@@ -10,27 +10,33 @@ import (
 	"github.com/google/subcommands"
 )
 
+// UnpackCmd is used to unpack pbo files into directories.
 type UnpackCmd struct {
 	verbose     bool
 	deleteAfter bool
 	destination string
 }
 
+// Name returns the name of this command.
 func (*UnpackCmd) Name() string { return "unpack" }
 
+// Synopsis returns the synopsis of this command.
 func (*UnpackCmd) Synopsis() string { return "Unpacks a PBO" }
 
+// Usage returns the usage of this command.
 func (*UnpackCmd) Usage() string {
 	return `unpack [-verbose] [-delete] [-destination <dir>] <pbo>
 `
 }
 
+// SetFlags registers all flags for this command.
 func (u *UnpackCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&u.verbose, "verbose", false, "be verbose")
 	f.BoolVar(&u.deleteAfter, "delete", false, "delete pbo after successful unpacking")
 	f.StringVar(&u.destination, "destination", "", "set destination where to unpack the pbo. Defaults to <pbo> without .pbo extension")
 }
 
+// Execute parses and executes the input.
 func (u *UnpackCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	path := f.Arg(0)
 	if path == "" {

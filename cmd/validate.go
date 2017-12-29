@@ -9,20 +9,26 @@ import (
 	"github.com/google/subcommands"
 )
 
+// ValidateCmd is used to validate pbo files.
 type ValidateCmd struct {
 }
 
+// Name returns the name of this command.
 func (*ValidateCmd) Name() string { return "validate" }
 
+// Synopsis returns the synopsis of this command.
 func (*ValidateCmd) Synopsis() string { return "Validates a PBO" }
 
+// Usage returns the usage of this command.
 func (*ValidateCmd) Usage() string {
 	return `validate <pbo>
 `
 }
 
+// SetFlags registers all flags for this command.
 func (*ValidateCmd) SetFlags(_ *flag.FlagSet) {}
 
+// Execute parses and executes the input.
 func (*ValidateCmd) Execute(_ context.Context, flags *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	path := flags.Arg(0)
 	if path == "" {
