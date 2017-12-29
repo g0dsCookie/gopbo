@@ -30,6 +30,7 @@ func (e *FileEntry) IsProductEntry() bool { return e.Packing == PackingMethodPro
 // Data returns the current files data.
 func (e *FileEntry) Data() ([]byte, error) { return e.parent.file.readData(e) }
 
+// NewProductEntry returns an empty *FileEntry with Packing set to PackingMethodProductEntry.
 func NewProductEntry() *FileEntry {
 	return &FileEntry{
 		Filename:     "",
@@ -43,6 +44,7 @@ func NewProductEntry() *FileEntry {
 	}
 }
 
+// NewEmptyEntry returns an empty *FileEntry which can be used as last file entry for pbos.
 func NewEmptyEntry() *FileEntry {
 	return &FileEntry{
 		Filename:     "",
