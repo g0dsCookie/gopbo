@@ -9,7 +9,11 @@ import (
 	"github.com/google/subcommands"
 )
 
-const version = "1.1.0"
+var (
+	buildTime string
+	gitHash   string
+	gitBranch string
+)
 
 // VersionCmd is used to show the current version.
 type VersionCmd struct {
@@ -32,6 +36,11 @@ func (*VersionCmd) SetFlags(_ *flag.FlagSet) {}
 
 // Execute parses and executes the input.
 func (*VersionCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	fmt.Println("gopbo-"+version, "|", runtime.Version(), "|", runtime.GOOS)
+	const format = "%10s %s\n"
+	fmt.Printf(format, "Built", buildTime)
+	fmt.Printf(format, "Git Hash", gitHash)
+	fmt.Printf(format, "Git Branch", gitBranch)
+	fmt.Printf(format, "Runtime", runtime.Version())
+	fmt.Printf(format, "OS", runtime.GOOS)
 	return subcommands.ExitSuccess
 }
